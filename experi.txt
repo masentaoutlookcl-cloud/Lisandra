@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Lisa IA | Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00d4ff;
+            --primary-gradient: linear-gradient(135deg, #00d4ff 0%, #0072ff 100%);
+            --bg: #0b0e14;
+            --surface: #161b22;
+            --text: #ffffff;
+            --text-dim: #8b949e;
+            --nav-h: 70px;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100dvh; /* Altura dinámica para evitar fallos con el teclado */
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            position: fixed; /* Evita rebotes de scroll en el cuerpo principal */
+        }
+
+        .main-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+        }
+
+        /* --- CONTENIDO --- */
+        .content-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .page.active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- CHAT UI --- */
+        #chat-scroller {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .bubble {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 20px;
+            font-size: 15px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .bubble.ia {
+            align-self: flex-start;
+            background: var(--surface);
+            border-bottom-left-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .bubble.user {
+            align-self: flex-end;
+            background: var(--primary-gradient);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        /* --- INPUT SECCIÓN (CORREGIDO) --- */
+        .input-section {
+            padding: 10px 15px;
+            background: var(--bg);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0; /* No permite que se encoja */
+            z-index: 100;
+        }
+
+        .input-bar {
+            background: var(--surface);
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            padding: 5px 5px 5px 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .input-bar input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            padding: 10px 0;
+        }
+
+        .send-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .send-btn:active { transform: scale(0.9); }
+
+        /* --- NAVBAR --- */
+        #navbar {
+            height: var(--nav-h);
+            background: #0d1117;
+            display: flex;
+            border-top: 1px solid #30363d;
+            padding-bottom: env(safe-area-inset-bottom);
+            flex-shrink: 0;
+        }
+
+        .nav-item {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            gap: 4px;
+        }
+
+        .nav-item.active { color: var(--primary); }
+
+        /* --- MEMORIA --- */
+        .storage-container { padding: 20px; overflow-y: auto; flex: 1; }
+        .stat-card {
+            background: var(--surface);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .mem-item {
+            background: rgba(255,255,255,0.03);
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .btn-danger {
+            background: rgba(255, 75, 107, 0.1);
+            color: #ff4b6b;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            width: 100%;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-wrapper">
+    
+    <main class="content-area">
+        
+        <section id="page-chat" class="page active">
+            <header style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); flex-shrink: 0;">
+                <h2 style="margin:0; font-size: 18px; color: var(--primary);">Lisa IA</h2>
+                <span style="font-size: 11px; color: #00f298;">● Memoria Inteligente Lista</span>
+            </header>
+
+            <div id="chat-scroller">
+                <div class="bubble ia">Hola Lisa, he optimizado mi sistema. Ahora la barra de escritura no se moverá y el diseño es más estable. ¿En qué puedo ayudarte hoy?</div>
+            </div>
+
+            <div class="input-section">
+                <div class="input-bar">
+                    <input type="text" id="userInput" placeholder="Escribe aquí..." autocomplete="off">
+                    <button class="send-btn" onclick="sendMessage()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-memoria" class="page">
+            <div class="storage-container">
+                <h2 style="margin-bottom: 5px;">Memoria Local</h2>
+                <p style="color: var(--text-dim); margin-top: 0; font-size: 14px;">Datos almacenados físicamente en este equipo.</p>
+
+                <div class="stat-card">
+                    <span style="font-size: 12px; color: var(--text-dim); text-transform: uppercase;">Conocimientos Adquiridos</span>
+                    <div id="count-val" style="font-size: 32px; font-weight: bold; color: var(--primary); margin-top: 5px;">0</div>
+                </div>
+
+                <div id="mem-list" class="item-list"></div>
+                <button class="btn-danger" onclick="resetMemory()">Borrar toda la memoria</button>
+            </div>
+        </section>
+
+    </main>
+
+    <nav id="navbar">
+        <button class="nav-item active" onclick="switchPage('chat', this)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            Chat
+        </button>
+        <button class="nav-item" onclick="switchPage('memoria', this)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6" y2="6"></line><line x1="6" y1="18" x2="6" y2="18"></line></svg>
+            Memoria
+        </button>
+    </nav>
+
+</div>
+
+<script>
+    const DB_NAME = "LisaFinalDB";
+    let db;
+
+    // Inicializar DB
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = e => e.target.result.createObjectStore("kb", { keyPath: "q" });
+    request.onsuccess = e => { db = e.target.result; renderMemory(); };
+
+    function switchPage(pageId, btn) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        document.getElementById('page-' + pageId).classList.add('active');
+        btn.classList.add('active');
+        if(pageId === 'memoria') renderMemory();
+    }
+
+    let learning = false;
+    let lastQuery = "";
+
+    function addMsg(txt, type) {
+        const scroller = document.getElementById('chat-scroller');
+        const d = document.createElement('div');
+        d.className = `bubble ${type}`;
+        d.innerText = txt;
+        scroller.appendChild(d);
+        
+        // Scroll suave al final
+        setTimeout(() => {
+            scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' });
+        }, 50);
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('userInput');
+        const val = input.value.trim();
+        if(!val) return;
+
+        addMsg(val, 'user');
+        input.value = "";
+
+        if(learning) {
+            saveData(lastQuery, val);
+            addMsg("¡Entendido! He guardado ese conocimiento en mi memoria local.", "ia");
+            learning = false;
+            return;
+        }
+
+        const localData = await getData(val);
+        if(localData) {
+            addMsg(localData, "ia");
+        } else {
+            try {
+                const res = await fetch(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(val)}`);
+                const data = await res.json();
+                if(data.extract) {
+                    addMsg(data.extract, "ia");
+                    saveData(val, data.extract);
+                } else { throw 1; }
+            } catch {
+                addMsg(`No tengo información sobre "${val}". ¿Podrías enseñarme qué es? (Escribe la respuesta aquí abajo)`, "ia");
+                learning = true;
+                lastQuery = val;
+            }
+        }
+    }
+
+    // DB Helpers
+    function saveData(q, a) {
+        const tx = db.transaction("kb", "readwrite");
+        tx.objectStore("kb").put({ q: q.toLowerCase(), a: a });
+    }
+
+    function getData(q) {
+        return new Promise(res => {
+            const tx = db.transaction("kb", "readonly");
+            const req = tx.objectStore("kb").get(q.toLowerCase());
+            req.onsuccess = () => res(req.result ? req.result.a : null);
+        });
+    }
+
+    function renderMemory() {
+        const list = document.getElementById('mem-list');
+        if(!list) return;
+        list.innerHTML = "";
+        let count = 0;
+        const tx = db.transaction("kb", "readonly");
+        tx.objectStore("kb").openCursor().onsuccess = e => {
+            const cursor = e.target.result;
+            if(cursor) {
+                count++;
+                const div = document.createElement('div');
+                div.className = 'mem-item';
+                div.innerHTML = `<span>${cursor.value.q}</span><button onclick="deleteRow('${cursor.value.q}')" style="background:none; border:none; color:#ff4b6b; font-size:18px;">✕</button>`;
+                list.appendChild(div);
+                cursor.continue();
+            }
+            document.getElementById('count-val').innerText = count;
+        };
+    }
+
+    function deleteRow(q) {
+        const tx = db.transaction("kb", "readwrite");
+        tx.objectStore("kb").delete(q);
+        tx.oncomplete = () => renderMemory();
+    }
+
+    function resetMemory() {
+        if(confirm("¿Estás segura, Lisa? Se borrarán todos tus datos guardados.")) {
+            indexedDB.deleteDatabase(DB_NAME);
+            location.reload();
+        }
+    }
+
+    // Manejo de teclado y visualización en móviles
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+            const scroller = document.getElementById('chat-scroller');
+            scroller.scrollTop = scroller.scrollHeight;
+        });
+    }
+
+    document.getElementById('userInput').addEventListener('keypress', e => e.key === 'Enter' && sendMessage());
+</script>
+
+</body>
+</html>
